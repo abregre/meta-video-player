@@ -168,9 +168,6 @@
         mounted() {
             this.initializeVideoScreen()
         },
-        beforeDestroy() {
-            document.removeEventListener('fullscreenchange', this.fullScreenChange, false)
-        },
         methods: {
             initializeVideoScreen() {
                 this.videoWrapper = this.$refs.videoWrapper
@@ -182,9 +179,6 @@
                 }
             },
             initializeVideoListeners() {
-                document.addEventListener('fullscreenchange', () => {
-                    this.setFullscreenData(!!(document.fullScreen || document.fullscreenElement))
-                })
                 this.videoWrapper.addEventListener('mouseover', () => {
                     this.isHovering = true
                 })
@@ -270,14 +264,9 @@
             fsClicked() {
                 if (document.fullscreenElement !== null) {
                     document.exitFullscreen()
-                    this.setFullscreenData(false)
                 } else {
-                    this.videoContainer.requestFullscreen()
-                    this.setFullscreenData(true)
+                    this.videoWrapper.requestFullscreen()
                 }
-            },
-            setFullscreenData(state) {
-                this.videoContainer.setAttribute('data-fullscreen', !!state)
             },
             videoEnded() {
                 this.enableReplay = true
@@ -298,8 +287,7 @@
 
 .video-container {
     width: 100%;
-    height: 31rem;
-    max-width: 64rem;
+    height: 100%;
     background-color: hsl(0, 0%, 20%);
     position: relative;
 }
@@ -315,12 +303,11 @@
 }
 
 .video-controls {
+    position: absolute;
     bottom: 0;
     left: 0;
-    max-width: 64rem;
     width: 100%;
     height: 2.5rem;
-    position: relative;
     list-style: none;
     padding: 0.5rem 0.15rem;
     display: flex;
