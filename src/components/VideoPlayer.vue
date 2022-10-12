@@ -1,5 +1,8 @@
 <template>
-    <div class="video-wrapper">
+    <div
+        ref="videoWrapper"
+        class="video-wrapper"
+    >
         <figure
             ref="videoContainer"
             class="video-container"
@@ -10,6 +13,8 @@
                 class="video-screen"
                 @click="playPauseClicked"
                 @ended="videoEnded"
+                @loadedmetadata="loadedVideoMetaData"
+                @timeupdate="updateVideoTime"
             >
                 <source
                     :src="require('@/assets/demo-video.mp4')"
@@ -163,8 +168,12 @@
         mounted() {
             this.initializeVideoScreen()
         },
+        beforeDestroy() {
+            document.removeEventListener('fullscreenchange', this.fullScreenChange, false)
+        },
         methods: {
             initializeVideoScreen() {
+                this.videoWrapper = this.$refs.videoWrapper
                 this.videoContainer = this.$refs.videoContainer
                 this.video = this.$refs.videoScreen
                 if (this.video) {
@@ -173,25 +182,28 @@
                 }
             },
             initializeVideoListeners() {
-                this.video.addEventListener('loadedmetadata', () => {
-                    this.progress.max = this.video.duration
-                })
-                this.video.addEventListener('timeupdate', () => {
-                    if (!this.progress.getAttribute('max')) {
-                        this.progress.setAttribute('max', this.video.duration)
-                    }
-                    this.progress.value = this.video.currentTime
-                    this.progressBar.style.width = Math.floor((this.video.currentTime / this.video.duration) * 100) + '%'
-                })
-                document.addEventListener('fullscreenchange', (e) => {
+                document.addEventListener('fullscreenchange', () => {
                     this.setFullscreenData(!!(document.fullScreen || document.fullscreenElement))
                 })
-                this.videoContainer.addEventListener('mouseover', () => {
+                this.videoWrapper.addEventListener('mouseover', () => {
                     this.isHovering = true
                 })
-                this.videoContainer.addEventListener('mouseout', () => {
+                this.videoWrapper.addEventListener('mouseout', () => {
                     this.isHovering = false
                 })
+                this.videoWrapper.addEventListener('dblclick', () => {
+                    this.fsClicked()
+                })
+            },
+            updateVideoTime() {
+                if (!this.progress.getAttribute('max')) {
+                    this.progress.setAttribute('max', this.video.duration)
+                }
+                this.progress.value = this.video.currentTime
+                this.progressBar.style.width = Math.floor((this.video.currentTime / this.video.duration) * 100) + '%'
+            },
+            loadedVideoMetaData() {
+                this.progress.max = this.video.duration
             },
             initializeVideoControls() {
                 this.videoControls = this.$refs.videoControls
@@ -280,15 +292,16 @@
 .video-wrapper {
     position: relative;
     margin: 0 auto;
+    width: 100%;
     height: 33.5rem;
 }
 
 .video-container {
-    max-width: 64rem;
     width: 100%;
     height: 31rem;
+    max-width: 64rem;
     background-color: hsl(0, 0%, 20%);
-    padding-top: 591.44px / 1127.34px * 100%;
+    position: relative;
 }
 
 .video-screen {
@@ -310,7 +323,6 @@
     position: relative;
     list-style: none;
     padding: 0.5rem 0.15rem;
-    margin: 0 auto;
     display: flex;
     gap: 0.5rem;
     justify-content: space-between;
