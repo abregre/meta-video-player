@@ -29,7 +29,7 @@
         </figure>
         <transition name="fade">
             <ul
-                v-show="isPaused"
+                v-show="showVideoControls"
                 ref="videoControls"
                 class="video-controls"
             >
@@ -145,12 +145,19 @@
                 progress: null,
                 progressBar: null,
                 mute: null,
+                volume: null,
                 volInc: null,
                 volDec: null,
                 fs: null,
                 enableReplay: false,
                 isPaused: true,
-                isMuted: false
+                isMuted: false,
+                isHovering: false
+            }
+        },
+        computed: {
+            showVideoControls() {
+                return this.isPaused || this.isHovering
             }
         },
         mounted() {
@@ -178,6 +185,12 @@
                 })
                 document.addEventListener('fullscreenchange', (e) => {
                     this.setFullscreenData(!!(document.fullScreen || document.fullscreenElement))
+                })
+                this.videoContainer.addEventListener('mouseover', () => {
+                    this.isHovering = true
+                })
+                this.videoContainer.addEventListener('mouseout', () => {
+                    this.isHovering = false
                 })
             },
             initializeVideoControls() {
@@ -316,7 +329,7 @@
 }
 
 .fade-enter-active, .fade-leave-active {
-    transition: opacity 2s;
+    transition: opacity 1s;
 }
 
 .fade-enter, .fade-leave-to {
