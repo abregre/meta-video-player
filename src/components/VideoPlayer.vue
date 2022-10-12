@@ -8,6 +8,7 @@
                 ref="videoScreen"
                 preload="metadata"
                 class="video-screen"
+                @click="playPauseClicked"
                 @ended="videoEnded"
             >
                 <source
@@ -26,106 +27,109 @@
                 >
             </div>
         </figure>
-        <ul
-            ref="videoControls"
-            class="video-controls"
-        >
-            <li>
-                <button
-                    ref="playPause"
+        <transition name="fade">
+            <ul
+                v-show="isPaused"
+                ref="videoControls"
+                class="video-controls"
+            >
+                <li>
+                    <button
+                        ref="playPause"
+                        type="button"
+                        class="video-controls__button"
+                        @click="playPauseClicked"
+                    >
+                        <img
+                            v-if="isPaused"
+                            :src="require('@/assets/play.png')"
+                            alt="play"
+                            class="video-controls__button__icon"
+                        >
+                        <img
+                            v-else
+                            :src="require('@/assets/pause.png')"
+                            alt="pause"
+                            class="video-controls__button__icon"
+                        >
+                    </button>
+                </li>
+                <li>
+                    <button
+                        ref="stop"
+                        type="button"
+                        class="video-controls__button"
+                        @click="stopClicked"
+                    >
+                        <img
+                            :src="require('@/assets/stop.png')"
+                            alt="play"
+                            class="video-controls__button__icon"
+                        >
+                    </button>
+                </li>
+                <li class="progress">
+                    <progress
+                        ref="progress"
+                        value="0"
+                        min="0"
+                        @click="progressClicked"
+                    >
+                        <span
+                            ref="progressBar"
+                        />
+                    </progress>
+                </li>
+                <li>
+                    <button
+                        ref="mute"
+                        type="button"
+                        class="video-controls__button"
+                        @click="muteClicked"
+                    >
+                        <img
+                            v-if="isMuted"
+                            :src="require('@/assets/mute.png')"
+                            alt="play"
+                            class="video-controls__button__icon"
+                        >
+                        <img
+                            v-else
+                            :src="require('@/assets/unmute.png')"
+                            alt="pause"
+                            class="video-controls__button__icon"
+                        >
+                    </button>
+                </li>
+                <li>
+                    <button
+                        ref="volInc"
+                        type="button"
+                        class="video-controls__button"
+                        @click="volIncClicked"
+                    >Vol+</button></li>
+                <li><button
+                    ref="volDec"
                     type="button"
                     class="video-controls__button"
-                    @click="playPauseClicked"
-                >
-                    <img
-                        v-if="isPaused"
-                        :src="require('@/assets/play.png')"
-                        alt="play"
-                        class="video-controls__button__icon"
+                    @click="volDecClicked"
+                >Vol-</button></li>
+                <li>
+                    <button
+                        ref="fs"
+                        type="button"
+                        class="video-controls__button"
+                        @click="fsClicked"
                     >
-                    <img
-                        v-else
-                        :src="require('@/assets/pause.png')"
-                        alt="pause"
-                        class="video-controls__button__icon"
-                    >
-                </button>
-            </li>
-            <li>
-                <button
-                    ref="stop"
-                    type="button"
-                    class="video-controls__button"
-                    @click="stopClicked"
-                >
-                    <img
-                        :src="require('@/assets/stop.png')"
-                        alt="play"
-                        class="video-controls__button__icon"
-                    >
-                </button>
-            </li>
-            <li class="progress">
-                <progress
-                    ref="progress"
-                    value="0"
-                    min="0"
-                    @click="progressClicked"
-                >
-                    <span
-                        ref="progressBar"
-                    />
-                </progress>
-            </li>
-            <li>
-                <button
-                    ref="mute"
-                    type="button"
-                    class="video-controls__button"
-                    @click="muteClicked"
-                >
-                    <img
-                        v-if="isMuted"
-                        :src="require('@/assets/mute.png')"
-                        alt="play"
-                        class="video-controls__button__icon"
-                    >
-                    <img
-                        v-else
-                        :src="require('@/assets/unmute.png')"
-                        alt="pause"
-                        class="video-controls__button__icon"
-                    >
-                </button>
-            </li>
-            <li>
-                <button
-                    ref="volInc"
-                    type="button"
-                    class="video-controls__button"
-                    @click="volIncClicked"
-                >Vol+</button></li>
-            <li><button
-                ref="volDec"
-                type="button"
-                class="video-controls__button"
-                @click="volDecClicked"
-            >Vol-</button></li>
-            <li>
-                <button
-                    ref="fs"
-                    type="button"
-                    class="video-controls__button"
-                    @click="fsClicked"
-                >
-                    <img
-                        :src="require('@/assets/fullscreen.png')"
-                        alt="fullscreen"
-                        class="video-controls__button__icon"
-                    >
-                </button>
-            </li>
-        </ul>
+                        <img
+                            :src="require('@/assets/fullscreen.png')"
+                            alt="fullscreen"
+                            class="video-controls__button__icon"
+                        >
+                    </button>
+                </li>
+            </ul>
+        </transition>
     </div>
 </template>
 
@@ -263,14 +267,14 @@
 .video-wrapper {
     position: relative;
     margin: 0 auto;
+    height: 33.5rem;
 }
 
 .video-container {
     max-width: 64rem;
     width: 100%;
-    height: 30.875rem;
+    height: 31rem;
     background-color: hsl(0, 0%, 20%);
-    overflow: hidden;
     padding-top: 591.44px / 1127.34px * 100%;
 }
 
@@ -281,9 +285,12 @@
     width: 100%;
     height: 100%;
     background-color: #000;
+    cursor: pointer;
 }
 
 .video-controls {
+    bottom: 0;
+    left: 0;
     max-width: 64rem;
     width: 100%;
     height: 2.5rem;
@@ -299,14 +306,6 @@
     color: #fff;
 }
 
-.video-controls[data-state="hidden"] {
-    display: none;
-}
-
-.video-controls[data-state="visible"] {
-    display: block;
-}
-
 .video-controls .progress {
     cursor: pointer;
     width: 100%;
@@ -314,6 +313,14 @@
 
 .progress progress {
     width: 100%;
+}
+
+.fade-enter-active, .fade-leave-active {
+    transition: opacity 2s;
+}
+
+.fade-enter, .fade-leave-to {
+    opacity: 0;
 }
 
 .video-controls__button {
