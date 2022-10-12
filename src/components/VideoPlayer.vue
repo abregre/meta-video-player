@@ -272,7 +272,6 @@
                 this.enableReplay = true
                 this.isPaused = true
             }
-
         }
     }
 </script>
