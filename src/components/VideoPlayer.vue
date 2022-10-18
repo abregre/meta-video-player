@@ -11,15 +11,16 @@
                 ref="videoScreen"
                 preload="metadata"
                 class="video-screen"
-                @click="playPauseClicked"
+                @click="videoClicked"
                 @ended="videoEnded"
                 @loadedmetadata="loadedVideoMetaData"
                 @timeupdate="updateVideoTime"
             >
                 <source
-                    :src="require('@/assets/demo-video.mp4')"
+                    :src="require('@/assets/demo-video-2.mp4')"
                     type="video/mp4"
                 >
+                Sorry your browser can't play this type of video
             </video>
             <div
                 v-if="enableReplay"
@@ -86,11 +87,12 @@
                     </progress>
                 </li>
                 <li>
+                    <!-- TODO: FIX CLICK EVENT -->
                     <button
                         ref="mute"
                         type="button"
-                        class="video-controls__button"
-                        @click="muteClicked"
+                        class="video-controls__button volume-btn"
+                        @click.self="muteClicked"
                     >
                         <img
                             v-if="isMuted"
@@ -104,16 +106,26 @@
                             alt="pause"
                             class="video-controls__button__icon"
                         >
+                        <input
+                            v-if="!isMobileOrTablet && !isTouchDevice"
+                            v-model="volume"
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            class="volume-slider"
+                            @input="volumeSliderChanged"
+                        >
                     </button>
                 </li>
-                <li>
+                <li v-if="isMobileOrTablet || isTouchDevice">
                     <button
                         ref="volInc"
                         type="button"
                         class="video-controls__button"
                         @click="volIncClicked"
                     >Vol+</button></li>
-                <li><button
+                <li v-if="isMobileOrTablet || isTouchDevice"><button
                     ref="volDec"
                     type="button"
                     class="video-controls__button"
@@ -135,10 +147,26 @@
                 </li>
             </ul>
         </transition>
+        <transition name="fade">
+            <div
+                v-if="showVolumeIndicator"
+                class="volume-indicator-wrapper"
+                :class="{'show': showVolumeIndicator}"
+            >
+                <span>Volume</span>
+                <div class="volume-indicator-container">
+                    <span
+                        class="volume-indicator"
+                        :style="{'width': volume * 100 + '%'}"
+                    />
+                </div>
+            </div>
+        </transition>
     </div>
 </template>
 
 <script>
+    import deviceCheck from '@/utils/device-check'
     export default {
         name: 'VideoPlayer',
         data() {
@@ -157,16 +185,36 @@
                 enableReplay: false,
                 isPaused: true,
                 isMuted: false,
-                isHovering: false
+                isHovering: false,
+                showVolumeIndicator: false
             }
         },
         computed: {
             showVideoControls() {
                 return this.isPaused || this.isHovering
+            },
+            isMobileOrTablet() {
+                return deviceCheck.isMobileOrTablet()
+            },
+            isTouchDevice() {
+                return deviceCheck.isTouchDevice()
+            }
+        },
+        watch: {
+            video: {
+                handler(newVal) {
+                    if (newVal) {
+                        this.video.volume = this.volume
+                    }
+                },
+                immediate: true,
+                deep: true
             }
         },
         mounted() {
-            this.initializeVideoScreen()
+            if (this.supportsVideo) {
+                this.initializeVideoScreen()
+            }
         },
         methods: {
             initializeVideoScreen() {
@@ -179,6 +227,9 @@
                 }
             },
             initializeVideoListeners() {
+                if (this.isMobileOrTablet || this.isTouchDevice) {
+                    return
+                }
                 this.videoWrapper.addEventListener('mouseover', () => {
                     this.isHovering = true
                 })
@@ -188,16 +239,6 @@
                 this.videoWrapper.addEventListener('dblclick', () => {
                     this.fsClicked()
                 })
-            },
-            updateVideoTime() {
-                if (!this.progress.getAttribute('max')) {
-                    this.progress.setAttribute('max', this.video.duration)
-                }
-                this.progress.value = this.video.currentTime
-                this.progressBar.style.width = Math.floor((this.video.currentTime / this.video.duration) * 100) + '%'
-            },
-            loadedVideoMetaData() {
-                this.progress.max = this.video.duration
             },
             initializeVideoControls() {
                 this.videoControls = this.$refs.videoControls
@@ -210,12 +251,35 @@
                 this.volDec = this.$refs.volDec
                 this.fs = this.$refs.fs
             },
+            updateVideoTime() {
+                if (!this.progress.getAttribute('max')) {
+                    this.progress.setAttribute('max', this.video.duration)
+                }
+                this.progress.value = this.video.currentTime
+                this.progressBar.style.width = Math.floor((this.video.currentTime / this.video.duration) * 100) + '%'
+            },
+            loadedVideoMetaData() {
+                this.progress.max = this.video.duration
+            },
             progressClicked(e) {
                 const rect = this.progress.getBoundingClientRect()
                 const pos = (e.pageX - rect.left) / this.progress.offsetWidth
                 this.video.currentTime = pos * this.video.duration
             },
+            volumeSliderChanged() {
+                this.video.volume = this.volume
+                this.flashVolumeIndicator()
+            },
+            videoClicked() {
+                if ((this.isMobileOrTablet || this.isTouchDevice) && this.isPaused) {
+                    return
+                }
+                this.togglePlayPause()
+            },
             playPauseClicked() {
+                this.togglePlayPause()
+            },
+            togglePlayPause() {
                 if (this.video.paused || this.video.ended) {
                     if (this.video.ended) {
                         this.video.currentTime = 0
@@ -245,19 +309,27 @@
             },
             volIncClicked() {
                 this.changeVolume('+')
+                this.flashVolumeIndicator()
             },
             volDecClicked() {
                 this.changeVolume('-')
+                this.flashVolumeIndicator()
+            },
+            flashVolumeIndicator() {
+                this.showVolumeIndicator = true
+                setTimeout(() => {
+                    this.showVolumeIndicator = false
+                }, 3000)
             },
             changeVolume(direction) {
                 const currentVolume = Math.floor(this.video.volume * 10) / 10
                 if (direction === '+') {
                     if (currentVolume < 1) {
-                        this.video.volume += 0.05
+                        this.video.volume += 0.1
                     }
                 } else if (direction === '-') {
                     if (currentVolume > 0) {
-                        this.video.volume -= 0.05
+                        this.video.volume -= 0.1
                     }
                 }
             },
@@ -282,6 +354,39 @@
     margin: 0 auto;
     width: 100%;
     height: 33.5rem;
+}
+
+.volume-indicator-wrapper {
+    position: absolute;
+    top: 5%;
+    right: 5%;
+    height: 3.5rem;
+    max-width: 15rem;
+    width: 35%;
+    color: #fff;
+    background: #000;
+    padding: 0.5rem;
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.volume-indicator-wrapper.show {
+    display: flex;
+}
+
+.volume-indicator-container {
+    background: rgb(19, 19, 19);
+    width: 100%;
+    height: 100%;
+    display: flex;
+}
+
+.volume-indicator {
+    width: 0;
+    height: 1rem;
+    background: #fff;
+    transition: all 0.5s ease;
 }
 
 .video-container {
@@ -341,6 +446,19 @@
     cursor: pointer;
     font-size: 1rem;
     padding: 0.5rem;
+    position: relative;
+}
+
+.volume-slider {
+    display: none;
+}
+
+.video-controls__button.volume-btn:hover .volume-slider{
+    display: flex;
+    position: absolute;
+    top: -5.5rem;
+    left: -3.9rem;
+    transform: rotate(-90deg);
 }
 
 .replay-btn {
@@ -361,4 +479,5 @@
     width: 1.2rem;
     height: 1.2rem;
 }
+
 </style>

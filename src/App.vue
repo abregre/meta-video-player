@@ -21,4 +21,20 @@
     padding: 0;
     box-sizing: border-box;
 }
+
+.desktop-only {
+    display: none;
+}
+
+@media screen and (min-width: 768px) {
+
+    .mobile-only {
+        display: none;
+    }
+
+    .desktop-only {
+        display: block;
+    }
+
+}
 </style>

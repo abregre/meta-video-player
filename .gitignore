@@ -2,6 +2,7 @@
 node_modules
 /dist
 
+src/assets/demo-video-2.mp4
 
 # local env files
 .env.local
